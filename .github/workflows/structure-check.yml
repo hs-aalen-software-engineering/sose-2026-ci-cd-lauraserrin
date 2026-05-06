@@ -1,0 +1,474 @@
+name: Refactoring Structure Check
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-structure:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize scoring
+        id: init
+        run: |
+          echo "score=0" >> $GITHUB_OUTPUT
+          echo "max_score=0" >> $GITHUB_OUTPUT
+          echo "" > /tmp/feedback.md
+          echo "## 📊 Structure Check Results" >> /tmp/feedback.md
+          echo "" >> /tmp/feedback.md
+
+      - name: Check required files exist
+        id: files
+        run: |
+          echo "🔍 Checking that all required module files exist..."
+
+          score=0
+          max_score=4
+          feedback="### 📁 File Structure (0/$max_score points)\n\n"
+
+          if [ -f src/road_profile_viewer/geometry.py ]; then
+            echo "✅ src/road_profile_viewer/geometry.py exists"
+            feedback+="✅ **geometry.py** exists (+1 point)\n"
+            score=$((score + 1))
+          else
+            echo "❌ src/road_profile_viewer/geometry.py not found"
+            feedback+="❌ **geometry.py** missing (0 points)\n"
+          fi
+
+          if [ -f src/road_profile_viewer/road.py ]; then
+            echo "✅ src/road_profile_viewer/road.py exists"
+            feedback+="✅ **road.py** exists (+1 point)\n"
+            score=$((score + 1))
+          else
+            echo "❌ src/road_profile_viewer/road.py not found"
+            feedback+="❌ **road.py** missing (0 points)\n"
+          fi
+
+          if [ -f src/road_profile_viewer/visualization.py ]; then
+            echo "✅ src/road_profile_viewer/visualization.py exists"
+            feedback+="✅ **visualization.py** exists (+1 point)\n"
+            score=$((score + 1))
+          else
+            echo "❌ src/road_profile_viewer/visualization.py not found"
+            feedback+="❌ **visualization.py** missing (0 points)\n"
+          fi
+
+          if [ -f src/road_profile_viewer/main.py ]; then
+            echo "✅ src/road_profile_viewer/main.py exists"
+            feedback+="✅ **main.py** exists (+1 point)\n"
+            score=$((score + 1))
+          else
+            echo "❌ src/road_profile_viewer/main.py not found"
+            feedback+="❌ **main.py** missing (0 points)\n"
+          fi
+
+          # Update feedback with actual score
+          feedback=$(echo -e "$feedback" | sed "s/(0\/$max_score points)/($score\/$max_score points)/")
+          echo -e "$feedback" >> /tmp/feedback.md
+          echo "" >> /tmp/feedback.md
+
+          echo "score=$score" >> $GITHUB_OUTPUT
+          echo "max_score=$max_score" >> $GITHUB_OUTPUT
+
+          if [ $score -lt $max_score ]; then
+            echo "💡 **Hint:** Create all module files in src/road_profile_viewer/ directory" >> /tmp/feedback.md
+            echo "" >> /tmp/feedback.md
+          fi
+
+      - name: Check geometry.py exports correct functions
+        id: geometry
+        if: always()
+        run: |
+          echo "🔍 Checking geometry.py has required functions..."
+
+          score=0
+          max_score=2
+          feedback="### 🔧 Geometry Module (0/$max_score points)\n\n"
+
+          if [ -f src/road_profile_viewer/geometry.py ]; then
+            if grep -q "def calculate_ray_line" src/road_profile_viewer/geometry.py; then
+              echo "✅ calculate_ray_line() found"
+              feedback+="✅ **calculate_ray_line()** function present (+1 point)\n"
+              score=$((score + 1))
+            else
+              echo "❌ calculate_ray_line() not found"
+              feedback+="❌ **calculate_ray_line()** function missing (0 points)\n"
+            fi
+
+            if grep -q "def find_intersection" src/road_profile_viewer/geometry.py; then
+              echo "✅ find_intersection() found"
+              feedback+="✅ **find_intersection()** function present (+1 point)\n"
+              score=$((score + 1))
+            else
+              echo "❌ find_intersection() not found"
+              feedback+="❌ **find_intersection()** function missing (0 points)\n"
+            fi
+          else
+            feedback+="❌ geometry.py not found - cannot check functions (0 points)\n"
+          fi
+
+          feedback=$(echo -e "$feedback" | sed "s/(0\/$max_score points)/($score\/$max_score points)/")
+          echo -e "$feedback" >> /tmp/feedback.md
+          echo "" >> /tmp/feedback.md
+
+          echo "score=$score" >> $GITHUB_OUTPUT
+          echo "max_score=$max_score" >> $GITHUB_OUTPUT
+
+          if [ $score -lt $max_score ]; then
+            echo "💡 **Hint:** Extract calculate_ray_line() and find_intersection() from main.py" >> /tmp/feedback.md
+            echo "" >> /tmp/feedback.md
+          fi
+
+      - name: Check road.py exports correct functions
+        id: road
+        if: always()
+        run: |
+          echo "🔍 Checking road.py has required functions..."
+
+          score=0
+          max_score=1
+          feedback="### 🛣️ Road Module (0/$max_score point)\n\n"
+
+          if [ -f src/road_profile_viewer/road.py ]; then
+            if grep -q "def generate_road_profile" src/road_profile_viewer/road.py; then
+              echo "✅ generate_road_profile() found"
+              feedback+="✅ **generate_road_profile()** function present (+1 point)\n"
+              score=$((score + 1))
+            else
+              echo "❌ generate_road_profile() not found"
+              feedback+="❌ **generate_road_profile()** function missing (0 points)\n"
+            fi
+          else
+            feedback+="❌ road.py not found - cannot check functions (0 points)\n"
+          fi
+
+          feedback=$(echo -e "$feedback" | sed "s/(0\/$max_score point)/($score\/$max_score point)/")
+          echo -e "$feedback" | sed "s/($max_score\/$max_score point)/($score\/$max_score point)/" >> /tmp/feedback.md
+          echo "" >> /tmp/feedback.md
+
+          echo "score=$score" >> $GITHUB_OUTPUT
+          echo "max_score=$max_score" >> $GITHUB_OUTPUT
+
+          if [ $score -lt $max_score ]; then
+            echo "💡 **Hint:** Extract generate_road_profile() from main.py" >> /tmp/feedback.md
+            echo "" >> /tmp/feedback.md
+          fi
+
+      - name: Check visualization.py exports correct functions
+        id: visualization
+        if: always()
+        run: |
+          echo "🔍 Checking visualization.py has required functions..."
+
+          score=0
+          max_score=1
+          feedback="### 📊 Visualization Module (0/$max_score point)\n\n"
+
+          if [ -f src/road_profile_viewer/visualization.py ]; then
+            if grep -q "def create_dash_app" src/road_profile_viewer/visualization.py; then
+              echo "✅ create_dash_app() found"
+              feedback+="✅ **create_dash_app()** function present (+1 point)\n"
+              score=$((score + 1))
+            else
+              echo "❌ create_dash_app() not found"
+              feedback+="❌ **create_dash_app()** function missing (0 points)\n"
+            fi
+          else
+            feedback+="❌ visualization.py not found - cannot check functions (0 points)\n"
+          fi
+
+          feedback=$(echo -e "$feedback" | sed "s/(0\/$max_score point)/($score\/$max_score point)/")
+          echo -e "$feedback" | sed "s/($max_score\/$max_score point)/($score\/$max_score point)/" >> /tmp/feedback.md
+          echo "" >> /tmp/feedback.md
+
+          echo "score=$score" >> $GITHUB_OUTPUT
+          echo "max_score=$max_score" >> $GITHUB_OUTPUT
+
+          if [ $score -lt $max_score ]; then
+            echo "💡 **Hint:** Extract create_dash_app() and all UI code from main.py" >> /tmp/feedback.md
+            echo "" >> /tmp/feedback.md
+          fi
+
+      - name: Check main.py is simplified
+        id: main_simplified
+        if: always()
+        run: |
+          echo "🔍 Checking main.py is simplified..."
+
+          score=0
+          max_score=2
+          feedback="### 📝 Main Module Simplification (0/$max_score points)\n\n"
+
+          if [ -f src/road_profile_viewer/main.py ]; then
+            lines=$(wc -l < src/road_profile_viewer/main.py)
+
+            if [ "$lines" -le 30 ]; then
+              echo "✅ main.py is simplified ($lines lines)"
+              feedback+="✅ **main.py** is properly simplified with $lines lines (+2 points)\n"
+              score=2
+            elif [ "$lines" -le 50 ]; then
+              echo "⚠️ main.py has $lines lines (acceptable but could be smaller)"
+              feedback+="⚠️ **main.py** has $lines lines - could be more concise (+1 point)\n"
+              score=1
+            else
+              echo "❌ main.py has $lines lines (should be < 30)"
+              feedback+="❌ **main.py** has $lines lines - needs more simplification (0 points)\n"
+            fi
+          else
+            feedback+="❌ main.py not found (0 points)\n"
+          fi
+
+          feedback=$(echo -e "$feedback" | sed "s/(0\/$max_score points)/($score\/$max_score points)/")
+          echo -e "$feedback" >> /tmp/feedback.md
+          echo "" >> /tmp/feedback.md
+
+          echo "score=$score" >> $GITHUB_OUTPUT
+          echo "max_score=$max_score" >> $GITHUB_OUTPUT
+
+          if [ $score -lt $max_score ]; then
+            echo "💡 **Hint:** main.py should only import from visualization and run the app (see instructions)" >> /tmp/feedback.md
+            echo "" >> /tmp/feedback.md
+          fi
+
+      - name: Check proper imports
+        id: imports
+        if: always()
+        run: |
+          echo "🔍 Checking imports..."
+
+          score=0
+          max_score=3
+          feedback="### 📦 Import Structure (0/$max_score points)\n\n"
+
+          # Check main.py imports
+          if [ -f src/road_profile_viewer/main.py ]; then
+            if grep -q "from \.visualization import\|from road_profile_viewer\.visualization import" src/road_profile_viewer/main.py; then
+              echo "✅ main.py imports from visualization"
+              feedback+="✅ **main.py** correctly imports from visualization (+1 point)\n"
+              score=$((score + 1))
+            else
+              echo "❌ main.py doesn't import from visualization"
+              feedback+="❌ **main.py** missing visualization import (0 points)\n"
+            fi
+          fi
+
+          # Check visualization.py imports
+          if [ -f src/road_profile_viewer/visualization.py ]; then
+            imports_correct=0
+
+            if grep -q "from \.geometry import\|from road_profile_viewer\.geometry import" src/road_profile_viewer/visualization.py; then
+              echo "✅ visualization.py imports from geometry"
+              feedback+="✅ **visualization.py** imports from geometry (+1 point)\n"
+              score=$((score + 1))
+              imports_correct=$((imports_correct + 1))
+            else
+              echo "❌ visualization.py doesn't import from geometry"
+              feedback+="❌ **visualization.py** missing geometry import (0 points)\n"
+            fi
+
+            if grep -q "from \.road import\|from road_profile_viewer\.road import" src/road_profile_viewer/visualization.py; then
+              echo "✅ visualization.py imports from road"
+              feedback+="✅ **visualization.py** imports from road (+1 point)\n"
+              score=$((score + 1))
+              imports_correct=$((imports_correct + 1))
+            else
+              echo "❌ visualization.py doesn't import from road"
+              feedback+="❌ **visualization.py** missing road import (0 points)\n"
+            fi
+          fi
+
+          feedback=$(echo -e "$feedback" | sed "s/(0\/$max_score points)/($score\/$max_score points)/")
+          echo -e "$feedback" >> /tmp/feedback.md
+          echo "" >> /tmp/feedback.md
+
+          echo "score=$score" >> $GITHUB_OUTPUT
+          echo "max_score=$max_score" >> $GITHUB_OUTPUT
+
+      - name: Check no circular dependencies
+        id: circular
+        if: always()
+        run: |
+          echo "🔍 Checking for circular dependencies..."
+
+          score=0
+          max_score=2
+          feedback="### 🔄 Dependency Structure (0/$max_score points)\n\n"
+          errors=0
+
+          if [ -f src/road_profile_viewer/geometry.py ]; then
+            if grep -q "from \.visualization import\|from road_profile_viewer\.visualization import\|from \.main import\|from road_profile_viewer\.main import" src/road_profile_viewer/geometry.py 2>/dev/null; then
+              echo "❌ Circular dependency: geometry.py imports from visualization or main"
+              feedback+="❌ **geometry.py** has circular dependency (0 points)\n"
+              errors=1
+            else
+              echo "✅ geometry.py has no upward dependencies"
+              score=$((score + 1))
+            fi
+          fi
+
+          if [ -f src/road_profile_viewer/road.py ]; then
+            if grep -q "from \.visualization import\|from road_profile_viewer\.visualization import\|from \.main import\|from road_profile_viewer\.main import" src/road_profile_viewer/road.py 2>/dev/null; then
+              echo "❌ Circular dependency: road.py imports from visualization or main"
+              feedback+="❌ **road.py** has circular dependency (0 points)\n"
+              errors=1
+            else
+              echo "✅ road.py has no upward dependencies"
+              score=$((score + 1))
+            fi
+          fi
+
+          if [ $errors -eq 0 ]; then
+            feedback+="✅ **No circular dependencies** detected - clean architecture (+$score points)\n"
+          fi
+
+          feedback=$(echo -e "$feedback" | sed "s/(0\/$max_score points)/($score\/$max_score points)/")
+          echo -e "$feedback" >> /tmp/feedback.md
+          echo "" >> /tmp/feedback.md
+
+          echo "score=$score" >> $GITHUB_OUTPUT
+          echo "max_score=$max_score" >> $GITHUB_OUTPUT
+
+          if [ $score -lt $max_score ]; then
+            echo "💡 **Hint:** Dependencies must flow in one direction: main → visualization → (geometry, road)" >> /tmp/feedback.md
+            echo "" >> /tmp/feedback.md
+          fi
+
+      - name: Calculate final score
+        id: final
+        if: always()
+        run: |
+          # Sum up all scores
+          total_score=0
+          total_max=0
+
+          # Files
+          total_score=$((total_score + ${{ steps.files.outputs.score || 0 }}))
+          total_max=$((total_max + ${{ steps.files.outputs.max_score || 0 }}))
+
+          # Geometry
+          total_score=$((total_score + ${{ steps.geometry.outputs.score || 0 }}))
+          total_max=$((total_max + ${{ steps.geometry.outputs.max_score || 0 }}))
+
+          # Road
+          total_score=$((total_score + ${{ steps.road.outputs.score || 0 }}))
+          total_max=$((total_max + ${{ steps.road.outputs.max_score || 0 }}))
+
+          # Visualization
+          total_score=$((total_score + ${{ steps.visualization.outputs.score || 0 }}))
+          total_max=$((total_max + ${{ steps.visualization.outputs.max_score || 0 }}))
+
+          # Main simplified
+          total_score=$((total_score + ${{ steps.main_simplified.outputs.score || 0 }}))
+          total_max=$((total_max + ${{ steps.main_simplified.outputs.max_score || 0 }}))
+
+          # Imports
+          total_score=$((total_score + ${{ steps.imports.outputs.score || 0 }}))
+          total_max=$((total_max + ${{ steps.imports.outputs.max_score || 0 }}))
+
+          # Circular
+          total_score=$((total_score + ${{ steps.circular.outputs.score || 0 }}))
+          total_max=$((total_max + ${{ steps.circular.outputs.max_score || 0 }}))
+
+          percentage=$((total_score * 100 / total_max))
+
+          echo "---" >> /tmp/feedback.md
+          echo "" >> /tmp/feedback.md
+          echo "### 🎯 Final Score: $total_score / $total_max points ($percentage%)" >> /tmp/feedback.md
+          echo "" >> /tmp/feedback.md
+
+          if [ $percentage -ge 90 ]; then
+            grade="A"
+            emoji="🌟"
+            comment="Excellent work!"
+          elif [ $percentage -ge 80 ]; then
+            grade="B"
+            emoji="👍"
+            comment="Good job!"
+          elif [ $percentage -ge 70 ]; then
+            grade="C"
+            emoji="👌"
+            comment="Acceptable, but room for improvement"
+          elif [ $percentage -ge 60 ]; then
+            grade="D"
+            emoji="⚠️"
+            comment="Needs improvement"
+          else
+            grade="F"
+            emoji="❌"
+            comment="Significant issues need to be addressed"
+          fi
+
+          echo "**Grade: $grade** $emoji" >> /tmp/feedback.md
+          echo "" >> /tmp/feedback.md
+          echo "*$comment*" >> /tmp/feedback.md
+          echo "" >> /tmp/feedback.md
+          echo "---" >> /tmp/feedback.md
+          echo "" >> /tmp/feedback.md
+          echo "*This automated check validates your refactoring structure. Keep up the good work! 🚀*" >> /tmp/feedback.md
+
+          echo "score=$total_score" >> $GITHUB_OUTPUT
+          echo "max_score=$total_max" >> $GITHUB_OUTPUT
+          echo "percentage=$percentage" >> $GITHUB_OUTPUT
+          echo "grade=$grade" >> $GITHUB_OUTPUT
+
+      - name: Post PR comment
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const feedback = fs.readFileSync('/tmp/feedback.md', 'utf8');
+
+            // Find existing comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.data.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('📊 Structure Check Results')
+            );
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: feedback
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: feedback
+              });
+            }
+
+      - name: Summary
+        if: always()
+        run: |
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🎉 Structure Check Complete!"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "Score: ${{ steps.final.outputs.score }} / ${{ steps.final.outputs.max_score }} (${{ steps.final.outputs.percentage }}%)"
+          echo "Grade: ${{ steps.final.outputs.grade }}"
+          echo ""
+          cat /tmp/feedback.md
